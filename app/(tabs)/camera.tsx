@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, SafeAreaView, Animated, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, Pressable, SafeAreaView, Animated, StatusBar, Alert } from 'react-native';
+import * as MediaLibrary from 'expo-media-library';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
@@ -13,7 +14,8 @@ export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<'off' | 'on'>('off');
-  const cameraRef = useRef(null);
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
+  const cameraRef = useRef<CameraView>(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -22,12 +24,42 @@ export default function CameraScreen() {
     }
   }, [permission]);
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.85, duration: 80, useNativeDriver: true }),
       Animated.timing(scaleAnim, { toValue: 1, duration: 120, useNativeDriver: true }),
     ]).start();
-    // TODO: Add actual capture logic here
+
+    if (!cameraRef.current) {
+      Alert.alert('Error', 'Camera not ready');
+      return;
+    }
+    
+    // Request media library permission if not granted
+    if (!mediaPermission?.granted) {
+      const { status } = await requestMediaPermission();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow access to save photos to your device.');
+        return;
+      }
+    }
+
+    try {
+      const photo = await cameraRef.current.takePictureAsync();
+      if (!photo) {
+        Alert.alert('Error', 'Failed to capture photo');
+        return;
+      }
+      
+      await MediaLibrary.createAssetAsync(photo.uri);
+      Alert.alert('Photo Saved', 'Your photo has been saved to the gallery.');
+    } catch (e) {
+      Alert.alert(
+        'Error',
+        'Failed to take photo: ' +
+          (e && typeof e === 'object' && 'message' in e ? (e as any).message : String(e))
+      );
+    }
   };
 
   return (
