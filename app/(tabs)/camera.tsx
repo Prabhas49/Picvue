@@ -1,10 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, SafeAreaView, Animated, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, Camera as CameraIcon, RefreshCw, Image as ImageIcon } from 'lucide-react-native';
+import { ChevronLeft, Camera as CameraIcon, RefreshCw, Image as ImageIcon, Zap } from 'lucide-react-native';
 import CameraGuidanceOverlay from '../../components/CameraGuidanceOverlay';
 
 export default function CameraScreen() {
@@ -12,53 +12,63 @@ export default function CameraScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
+  const [flash, setFlash] = useState<'off' | 'on'>('off');
   const cameraRef = useRef(null);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  // Request permission if not granted
   useEffect(() => {
     if (!permission?.granted) {
       requestPermission();
     }
   }, [permission]);
 
+  const handleCapture = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, { toValue: 0.85, duration: 80, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1, duration: 120, useNativeDriver: true }),
+    ]).start();
+    // TODO: Add actual capture logic here
+  };
+
   return (
     <View style={styles.root}>
+      <StatusBar barStyle="light-content" />
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topBar}>
-          <Pressable onPress={() => router.back()} style={styles.iconButton}>
-            <ChevronLeft size={28} color="#fff" />
-          </Pressable>
-          <Text style={styles.title}>Camera</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <LinearGradient colors={['#1a1a2e', 'transparent']} style={styles.headerGradient}>
+          <View style={styles.topBar}>
+            <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
+              <ChevronLeft size={28} color="#fff" />
+            </Pressable>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={styles.title}>PicVue</Text>
+              <Text style={styles.subtitle}>Take the perfect shot</Text>
+            </View>
+            <Pressable onPress={() => setFlash(flash === 'off' ? 'on' : 'off')} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
+              <Zap size={24} color={flash === 'on' ? '#FFD700' : '#fff'} opacity={flash === 'on' ? 1 : 0.5} />
+            </Pressable>
+          </View>
+        </LinearGradient>
         <View style={styles.cameraContainer}>
           <CameraView
             ref={cameraRef}
             style={styles.camera}
             facing={facing}
             ratio="16:9"
+            flash={flash}
           >
             <CameraGuidanceOverlay camera={cameraRef.current} />
           </CameraView>
         </View>
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.7)']}
-          style={styles.bottomOverlay}
-        >
+        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.bottomOverlay}>
           <View style={styles.bottomBar}>
             <Pressable style={styles.iconButton}>
               <ImageIcon size={28} color="#fff" />
             </Pressable>
-            <LinearGradient
-              colors={['#A084E8', '#F6A9A9']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.captureButton}
-            >
-              <Pressable style={styles.captureButtonInner}>
+            <Animated.View style={[styles.captureButton, { transform: [{ scale: scaleAnim }] }]}>
+              <Pressable style={styles.captureButtonInner} onPress={handleCapture}>
                 <CameraIcon size={36} color="#fff" />
               </Pressable>
-            </LinearGradient>
+            </Animated.View>
             <Pressable
               onPress={() => setFacing(facing === 'back' ? 'front' : 'back')}
               style={styles.iconButton}
@@ -73,68 +83,43 @@ export default function CameraScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#111',
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#111',
-  },
+  root: { flex: 1, backgroundColor: '#111' },
+  safeArea: { flex: 1, backgroundColor: '#111' },
+  headerGradient: { width: '100%', paddingBottom: 12, paddingTop: 0 },
   topBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  title: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  cameraContainer: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  camera: {
-    flex: 1,
-  },
+  title: { color: '#fff', fontSize: 22, fontWeight: '700', letterSpacing: 1 },
+  subtitle: { color: '#bbb', fontSize: 13, fontWeight: '400', marginTop: -2 },
+  cameraContainer: { flex: 1, backgroundColor: '#000', borderRadius: 22, overflow: 'hidden', margin: 8 },
+  camera: { flex: 1 },
   bottomOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '30%',
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: '28%',
+    justifyContent: 'flex-end',
   },
   bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 32, paddingBottom: 30, paddingTop: 16,
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 46, height: 46, borderRadius: 23,
+    backgroundColor: 'rgba(255,255,255,0.13)', justifyContent: 'center', alignItems: 'center',
+    marginHorizontal: 4,
   },
+  iconButtonPressed: { backgroundColor: 'rgba(255,255,255,0.23)' },
   captureButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 68, height: 68, borderRadius: 34,
+    backgroundColor: '#A084E8',
+    justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff',
+    shadowColor: '#A084E8', shadowOpacity: 0.4, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
   captureButtonInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 60, height: 60, borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.13)', justifyContent: 'center', alignItems: 'center',
   },
 });
