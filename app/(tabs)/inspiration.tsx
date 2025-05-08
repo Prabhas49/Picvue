@@ -1,43 +1,57 @@
 import React from 'react';
 import { View, StyleSheet, Text, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { AppLogo } from '../../components/AppLogo';
 import { InspirationGrid } from '../../components/InspirationGrid';
 
-const inspirationImages = [
-  { uri: 'https://picsum.photos/300/300?random=1', key: '1' },
-  { uri: 'https://picsum.photos/300/300?random=2', key: '2' },
-  { uri: 'https://picsum.photos/300/300?random=3', key: '3' },
-  { uri: 'https://picsum.photos/300/300?random=4', key: '4' },
-  { uri: 'https://picsum.photos/300/300?random=5', key: '5' },
-  { uri: 'https://picsum.photos/300/300?random=6', key: '6' },
-  { uri: 'https://picsum.photos/300/300?random=7', key: '7' },
-  { uri: 'https://picsum.photos/300/300?random=8', key: '8' },
-  { uri: 'https://picsum.photos/300/300?random=9', key: '9' },
-  { uri: 'https://picsum.photos/300/300?random=10', key: '10' },
-  { uri: 'https://picsum.photos/300/300?random=11', key: '11' },
-  { uri: 'https://picsum.photos/300/300?random=12', key: '12' },
-  { uri: 'https://picsum.photos/300/300?random=13', key: '13' },
-  { uri: 'https://picsum.photos/300/300?random=14', key: '14' },
-  { uri: 'https://picsum.photos/300/300?random=15', key: '15' },
-  { uri: 'https://picsum.photos/300/300?random=16', key: '16' },
-  { uri: 'https://picsum.photos/300/300?random=17', key: '17' },
-  { uri: 'https://picsum.photos/300/300?random=18', key: '18' },
-  { uri: 'https://picsum.photos/300/300?random=19', key: '19' },
-  { uri: 'https://picsum.photos/300/300?random=20', key: '20' },
-];
+const DEMO_IMAGES: Record<string, { uri: any; key: string }[]> = {
+  'yc': [
+    { uri: require('../../assets/demo/Y C/yc1.jpg'), key: 'yc1' },
+    { uri: require('../../assets/demo/Y C/yc2.webp'), key: 'yc2' },
+    { uri: require('../../assets/demo/Y C/yc3.jpg'), key: 'yc3' },
+    { uri: require('../../assets/demo/Y C/yc4.jpg'), key: 'yc4' },
+    { uri: require('../../assets/demo/Y C/yc5.jpeg'), key: 'yc5' },
+    { uri: require('../../assets/demo/Y C/yc6.jpeg'), key: 'yc6' },
+    { uri: require('../../assets/demo/Y C/yc7.jpeg'), key: 'yc7' },
+    { uri: require('../../assets/demo/Y C/yc8.jpeg'), key: 'yc8' },
+  ],
+  'sf bay bridge': [
+    { uri: require('../../assets/demo/sfb/sfb1.jpeg'), key: 'sfb1' },
+    { uri: require('../../assets/demo/sfb/sfb2.jpeg'), key: 'sfb2' },
+    { uri: require('../../assets/demo/sfb/sfb3.jpeg'), key: 'sfb3' },
+    { uri: require('../../assets/demo/sfb/sfb4.jpeg'), key: 'sfb4' },
+    { uri: require('../../assets/demo/sfb/sfb5.jpeg'), key: 'sfb5' },
+    { uri: require('../../assets/demo/sfb/sfb6.jpeg'), key: 'sfb6' },
+    { uri: require('../../assets/demo/sfb/sfb7.jpeg'), key: 'sfb7' },
+    { uri: require('../../assets/demo/sfb/sfb8.jpeg'), key: 'sfb8' },
+  ],
+};
 
 export default function InspirationScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  function normalizePrompt(prompt: string): string {
+    const p = prompt.toLowerCase().trim();
+    if (p.includes('y combinator')) return 'yc';
+    if (p.includes('golden gate bridge') || p.includes('sf bay bridge')) return 'sf bay bridge';
+    return p;
+  }
+
+  const prompt = typeof params.prompt === 'string' ? params.prompt : '';
+  const images = DEMO_IMAGES[normalizePrompt(prompt)] || [];
 
   return (
     <ScrollView style={styles.container}>
       <AppLogo />
       <Text style={styles.title}>Inspiration Gallery</Text>
       <InspirationGrid
-        images={inspirationImages}
-        onImagePress={() => router.push('/(tabs)/camera')}
+        images={images}
+        onImagePress={() => router.push({ pathname: '/(tabs)/camera', params: { prompt } })}
       />
+      {images.length === 0 && (
+        <Text style={{ color: '#888', marginTop: 24, textAlign: 'center' }}>No curated images for this prompt.</Text>
+      )}
     </ScrollView>
   );
 }

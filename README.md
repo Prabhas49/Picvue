@@ -49,7 +49,7 @@ PicVue AI is a revolutionary mobile application that combines cutting-edge AI te
 
 ## 📱 Available on
 
-- [iOS App Store](#
+- [iOS App Store](#)
 
 - [Google Play Store](#)
 

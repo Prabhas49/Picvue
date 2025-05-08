@@ -4,22 +4,54 @@ import { CameraView } from 'expo-camera';
 import { Sparkles } from 'lucide-react-native';
 
 interface CameraGuidanceOverlayProps {
-  camera: any; // Using any to avoid complex type issues with CameraView
+  prompt: string;
 }
 
-export default function CameraGuidanceOverlay({ camera }: CameraGuidanceOverlayProps) {
+export default function CameraGuidanceOverlay({ prompt }: CameraGuidanceOverlayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [guidanceText, setGuidanceText] = useState('Initializing camera...');
-  const [poseGuidance, setPoseGuidance] = useState('');
-  const [cameraSettings, setCameraSettings] = useState('');
-  
+  // Hardcoded camera settings and pose guidance for demo
+  let fakeSettings = null;
+  let poseGuidance = null;
+  if (prompt && prompt.toLowerCase().includes('y combinator')) {
+    fakeSettings = {
+      mode: 'Aperture Priority (A or Av)',
+      aperture: 'f/2.8',
+      shutter_speed: '1/100s',
+      iso: '100 or 200',
+      focus: 'single-point autofocus on the face of the person in the middle',
+      white_balance: 'Auto or adjust manually',
+    };
+    poseGuidance = {
+      positioning: 'staggered formation',
+      spacing: 'ensure enough space between subjects',
+      interaction: 'stand in front of a sign or interact with each other',
+      expressions: 'natural expressions, smile naturally',
+      eye_contact: 'at least one subject making eye contact with the camera',
+    };
+  } else if (prompt && (prompt.toLowerCase().includes('golden gate bridge') || prompt.toLowerCase().includes('sf bay bridge'))) {
+    fakeSettings = {
+      mode: 'Aperture Priority (A or Av)',
+      aperture: 'f/2.8',
+      shutter_speed: '1/200s',
+      iso: '100 or 200',
+      focus: "single-point autofocus on the subject's face or shoulder",
+      white_balance: 'Auto or adjust manually',
+    };
+    poseGuidance = {
+      positioning: 'off-center, rule of thirds',
+      background: 'use the iconic bridge as a background element',
+      interaction: 'look out at the water, touch the ground',
+      expressions: 'contemplative or relaxed',
+      lighting: 'position the subject to take advantage of natural light',
+    };
+  }
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade in animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -33,82 +65,7 @@ export default function CameraGuidanceOverlay({ camera }: CameraGuidanceOverlayP
         useNativeDriver: true,
       })
     ]).start();
-
-    // Pulsing animation for the icon
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: 0,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        })
-      ])
-    ).start();
-
-    if (!camera) {
-      return;
-    }
-
-    const analyzeScene = async () => {
-      try {
-        // Simulate lighting analysis
-        const lighting = Math.random() > 0.5 ? 'good' : 'low';
-        const settings = getOptimalSettings(lighting);
-        
-        // Simulate pose analysis
-        const pose = getPoseGuidance();
-
-        setCameraSettings(`Lighting: ${settings.lighting}\nExposure: ${settings.exposure}\nISO: ${settings.iso}`);
-        setPoseGuidance(pose);
-        setGuidanceText('Adjusting camera settings...');
-      } catch (error) {
-        console.error('Error analyzing scene:', error);
-        setGuidanceText('Camera ready');
-      }
-    };
-
-    // Initial analysis
-    analyzeScene();
-    
-    // Set up periodic updates
-    const interval = setInterval(analyzeScene, 2000);
-    
-    // Clean up interval on unmount
-    return () => clearInterval(interval);
-  }, [camera]);
-
-  const getOptimalSettings = (lighting: string) => {
-    if (lighting === 'low') {
-      return {
-        lighting: 'Low light mode',
-        exposure: 'High',
-        iso: '800'
-      };
-    }
-    return {
-      lighting: 'Good light',
-      exposure: 'Normal',
-      iso: '200'
-    };
-  };
-
-  const getPoseGuidance = () => {
-    const poses = [
-      'Stand straight and look at the camera',
-      'Turn your head slightly to the right',
-      'Smile naturally',
-      'Relax your shoulders',
-      'Place your hands naturally'
-    ];
-    return poses[Math.floor(Math.random() * poses.length)];
-  };
+  }, []);
 
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -136,25 +93,32 @@ export default function CameraGuidanceOverlay({ camera }: CameraGuidanceOverlayP
         <Text style={styles.headerText}>Photo Assistant</Text>
       </TouchableOpacity>
 
-      {isExpanded && (
+      {/* Only show overlay if expanded and we have guidance */}
+      {isExpanded && (fakeSettings || poseGuidance) && (
         <View style={styles.guidanceContainer}>
-          <View style={styles.statusContainer}>
-            <View style={styles.statusIndicator} />
-            <Text style={styles.statusText}>{guidanceText}</Text>
-          </View>
-          
-          {poseGuidance ? (
+          {fakeSettings && (
             <View style={styles.tipContainer}>
-              <Text style={styles.tipTitle}>Pose Tip</Text>
-              <Text style={styles.tipText}>{poseGuidance}</Text>
+              <Text style={styles.tipTitle}>Optimal Camera Settings</Text>
+              {'mode' in fakeSettings && <Text style={styles.tipText}>Mode: {fakeSettings.mode}</Text>}
+              {'aperture' in fakeSettings && <Text style={styles.tipText}>Aperture: {fakeSettings.aperture}</Text>}
+              {'shutter_speed' in fakeSettings && <Text style={styles.tipText}>Shutter: {fakeSettings.shutter_speed}</Text>}
+              {'iso' in fakeSettings && <Text style={styles.tipText}>ISO: {fakeSettings.iso}</Text>}
+              {'focus' in fakeSettings && <Text style={styles.tipText}>Focus: {fakeSettings.focus}</Text>}
+              {'white_balance' in fakeSettings && <Text style={styles.tipText}>White Balance: {fakeSettings.white_balance}</Text>}
             </View>
-          ) : null}
-
-          <View style={styles.settingsContainer}>
-            {cameraSettings.split('\n').map((setting, index) => (
-              <Text key={index} style={styles.settingText}>{setting}</Text>
-            ))}
-          </View>
+          )}
+          {poseGuidance && (
+            <View style={styles.tipContainer}>
+              <Text style={styles.tipTitle}>Pose Guidance</Text>
+              {'positioning' in poseGuidance && <Text style={styles.tipText}>Positioning: {poseGuidance.positioning}</Text>}
+              {'spacing' in poseGuidance && <Text style={styles.tipText}>Spacing: {poseGuidance.spacing}</Text>}
+              {'background' in poseGuidance && <Text style={styles.tipText}>Background: {poseGuidance.background}</Text>}
+              {'interaction' in poseGuidance && <Text style={styles.tipText}>Interaction: {poseGuidance.interaction}</Text>}
+              {'expressions' in poseGuidance && <Text style={styles.tipText}>Expressions: {poseGuidance.expressions}</Text>}
+              {'eye_contact' in poseGuidance && <Text style={styles.tipText}>Eye Contact: {poseGuidance.eye_contact}</Text>}
+              {'lighting' in poseGuidance && <Text style={styles.tipText}>Lighting: {poseGuidance.lighting}</Text>}
+            </View>
+          )}
         </View>
       )}
     </Animated.View>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, SafeAreaView, Animated, StatusBar, A
 import * as MediaLibrary from 'expo-media-library';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronLeft, Camera as CameraIcon, RefreshCw, Image as ImageIcon, Zap } from 'lucide-react-native';
@@ -11,6 +12,8 @@ import CameraGuidanceOverlay from '../../components/CameraGuidanceOverlay';
 export default function CameraScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const prompt = typeof params.prompt === 'string' ? params.prompt : '';
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<'off' | 'on'>('off');
@@ -88,7 +91,7 @@ export default function CameraScreen() {
             ratio="16:9"
             flash={flash}
           >
-            <CameraGuidanceOverlay camera={cameraRef.current} />
+            <CameraGuidanceOverlay prompt={prompt} />
           </CameraView>
         </View>
         <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.bottomOverlay}>

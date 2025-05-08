@@ -12,7 +12,7 @@ export default function HomeScreen() {
 
   const handleGenerateInspiration = () => {
     if (prompt.trim()) {
-      router.push('/(tabs)/inspiration');
+      router.push({ pathname: '/(tabs)/inspiration', params: { prompt } });
     }
   };
 
@@ -30,7 +30,7 @@ export default function HomeScreen() {
         placeholderTextColor="#B0A9C6"
       />
       <GradientButton onPress={handleGenerateInspiration}>
-        Generate
+        Show Inspiration
       </GradientButton>
     </KeyboardAvoidingView>
   );
